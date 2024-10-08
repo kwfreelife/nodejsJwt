@@ -1,6 +1,6 @@
 {
   "name": "nodejsjwt",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Node JS with JWT project for practice.",
   "main": "index.js",
   "scripts": {
