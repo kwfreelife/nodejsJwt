@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 const uid = 'kwfreelife';
 const pwd = 'L4Y6QEJI4ZCNaf3x';
 const connStr = `mongodb+srv://${uid}:${pwd}@cluster0.hl3uj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
