@@ -1,27 +1,120 @@
-const mongoose = require('mongoose');
-const uid = 'kwfreelife';
-const pwd = 'L4Y6QEJI4ZCNaf3x';
-const connStr = `mongodb+srv://${uid}:${pwd}@cluster0.hl3uj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-console.log("connstr:", connStr);
-mongoose.set('strictQuery',false);
-mongoose.connect(connStr)
-        .then( () => {
-            console.log("database connected. ^_^");
-        })
-        .catch((err) => {
-            console.log(err);
+require('dotenv').config();
+require('./config/db').connect(); //call Method connect
+
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('./model/user');
+const auth = require('./middleware/auth');
+const app = express();
+
+app.use(express.json());
+
+// Register
+app.post("/register", async (req,res) => {
+    // register logic in here.   
+    try {
+        // Get user input
+        const {firstName, lastName, email, password} = req.body;
+        // Validate
+        if (!(firstName && lastName && email && password)) {
+            res.status(400).send("All input are required!!!.");
+        }
+
+        // Check exisiting user
+        const oldUser = await User.findOne({ email });
+        if (oldUser){
+            return res.status(409).send("already exist user");
+        }
+
+        //encrypt pwd
+        encryptedPwd = await bcrypt.hash(password, 10);
+
+        //create user into the db.
+        const user = await User.create({
+            firstName, lastName,
+            email: email.toLowerCase(),
+            password: encryptedPwd
         });
 
-//Schema is the definition of table , field and data type
-const productSchema = {
-    productName: {type: String, require: true},
-    productPrice: {type: Number},    
-};
+        // creat token
+        const token = jwt.sign(
+            {
+                user_id: user._id,
+                email
+            },
+            process.env.TOKEN_KEY,{
+                expiresIn: "2h"}
+        );
 
-//Model is the object for CRUD the schema
-const productModel = mongoose.model('Product',productSchema);
-productModel.create({
-    productName: "Spring", productPrice:100
-}).then( () => {
-    console.log('Product added');
-})
+        // save user's token
+        user.token = token;
+
+        //return new user
+        res.status(201).json(user);
+
+    } catch (error) {
+        console.error(error);
+    } 
+});
+
+// Login
+app.post("/login", async (req,res) => {
+    // login logic in here.    
+
+    try {
+        // Get user input
+        const { email, password} = req.body;
+        // Validate
+        if (!(email && password)) {
+            res.status(400).send("no email and pwd are required!!!.");
+        }
+
+        // user exist
+        const user = await User.findOne({ email });
+        if (user && (await bcrypt.compare(password, user.password))){
+            // create token
+            const token = jwt.sign(
+                {
+                    user_id: user._id,
+                    email
+                },
+                process.env.TOKEN_KEY,{
+                    expiresIn: "2h"}
+            );
+        
+            // save user's token
+            user.token = token;
+    
+            // return exist user
+            res.status(202).json(user);
+    
+        }
+        res.status(403).send("invalid token");
+
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+// Welcome page when user login successfully.
+app.post("/welcome", auth,  (req,res) => {
+    res.status(200).send('weelcome !! ') ;
+});
+
+module.exports = app;
+
+/** 
+app.get('/', (req, res) => {
+    res.send('<h1>hello world kkkk</h1>');
+});
+app.post('/student', (req, res) => {
+
+} );
+
+
+app.listen(3000, () => {
+    console.log("server started at port 3000");
+});
+
+**/

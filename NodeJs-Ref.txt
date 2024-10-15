@@ -1,0 +1,4 @@
+/** Install dependency **/
+npm i mongoose express dotenv jsonwebtoken bcryptjs
+/** nodemon helper to refresh and restart when update js file. **/
+npm install -g nodemon 
